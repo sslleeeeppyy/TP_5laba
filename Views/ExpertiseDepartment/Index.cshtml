@@ -1,0 +1,72 @@
+@model List<TP_2laba.Models.ExpertiseDepartment>
+@{
+    ViewData["Title"] = "Список отделов экспертизы";
+}
+<h2>@ViewData["Title"]</h2>
+<p>
+    <a asp-action="Create">Добавить отдел</a>
+</p>
+@{
+    bool useExternal = false;
+    if (TempData["useExternal"] != null)
+    {
+        bool.TryParse(TempData["useExternal"].ToString(), out useExternal);
+    }
+    int? currentId = ViewBag.CurrentId as int?;
+}
+@if (Model.Count == 0)
+{
+    <p>Нет данных.</p>
+}
+else
+{
+    if (useExternal)
+    {
+        @await Html.PartialAsync("~/Views/Shared/_ExpertiseDepartmentListPartial.cshtml", (Model, currentId, true))
+    }
+    else
+    {
+        @RenderDepartmentTable(Model, currentId, true)
+    }
+}
+
+<form asp-action="SetHelper" method="post" style="display:inline">
+    <input type="hidden" name="useExternal" value="false" />
+    <input type="hidden" name="currentId" value="@(currentId.HasValue ? currentId.Value.ToString() : "")" />
+    <button type="submit" class="btn btn-outline-primary btn-sm">Внутренний метод</button>
+</form>
+<form asp-action="SetHelper" method="post" style="display:inline">
+    <input type="hidden" name="useExternal" value="true" />
+    <input type="hidden" name="currentId" value="@(currentId.HasValue ? currentId.Value.ToString() : "")" />
+    <button type="submit" class="btn btn-outline-success btn-sm">Внешний метод</button>
+</form>
+
+@functions {
+    public static Microsoft.AspNetCore.Html.IHtmlContent RenderDepartmentTable(List<TP_2laba.Models.ExpertiseDepartment> departments, int? currentId, bool showActions)
+    {
+        var writer = new System.IO.StringWriter();
+        writer.WriteLine("<table class=\"table\">");
+        writer.WriteLine("<thead><tr><th>Название отдела</th>" + (showActions ? "<th>Действия</th>" : "") + "</tr></thead>");
+        writer.WriteLine("<tbody>");
+        for (int i = 0; i < departments.Count; i++)
+        {
+            bool isCurrent = currentId != null && departments[i].Id == currentId;
+            writer.Write("<tr" + (isCurrent ? " class=\"table-success\"" : "") + ">");
+            writer.Write("<td>" + departments[i].Name);
+            if (isCurrent)
+                writer.Write(" <span class=\"badge bg-success ms-2\">Текущий</span>");
+            writer.Write("</td>");
+            if (showActions)
+            {
+                writer.Write("<td>");
+                writer.Write($"<a href=\"Edit/{departments[i].Id}\">Редактировать</a> | ");
+                writer.Write($"<a href=\"Details/{departments[i].Id}\">Подробнее</a> | ");
+                writer.Write($"<a href=\"Index?currentId={departments[i].Id}\">Сделать текущим</a>");
+                writer.Write("</td>");
+            }
+            writer.WriteLine("</tr>");
+        }
+        writer.WriteLine("</tbody></table>");
+        return new Microsoft.AspNetCore.Html.HtmlString(writer.ToString());
+    }
+} 
